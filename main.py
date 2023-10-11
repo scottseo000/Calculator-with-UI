@@ -1,16 +1,18 @@
 from tkinter import *
-from tkinter import font as tkFont
+from tkinter import font
 
 class CalcWindow:
-    currentOperator = "a"
-    firstNum = 0
-    secondNum = 0
-    
+    currentOperator = ""
+    firstNum = 0.0
+    secondNum = 0.0
+
+    #Since default values are 0, need this variable to determine if user wants 0 as an argument
+    operatorUsed = False
+
     def __init__(self, win):
         #create and place assets
         #main label
-
-        mainLabelFont = tkFont.Font(size=25, weight="bold")
+        mainLabelFont = font.Font(size=25, weight="bold")
         self.numberLabel = Label(win, text="0", font=mainLabelFont)
         self.numberLabel.place(x=20, y=40)
 
@@ -64,45 +66,102 @@ class CalcWindow:
         self.buttonNumNine.place(x=75, y=280)
 
         #operator buttons
-        self.buttonPlus = Button(win, text="+", height=3, width = 6)
+        self.buttonPlus = Button(win, text="+", height=3, width = 6,
+                                 command=lambda: self.changeOperator("+"))
         self.buttonPlus.place(x=190, y=100)
 
-        self.buttonMinus = Button(win, text="-", height=3, width=6)
+        self.buttonMinus = Button(win, text="-", height=3, width=6,
+                                  command=lambda: self.changeOperator("-"))
         self.buttonMinus.place(x=190, y=160)
 
-        self.buttonDivide = Button(win, text="/", height=3, width=6)
+        self.buttonDivide = Button(win, text="/", height=3, width=6,
+                                   command=lambda: self.changeOperator("/"))
         self.buttonDivide.place(x=190, y=220)
 
-        self.buttonMult = Button(win, text="x", height=3, width=6)
+        self.buttonMult = Button(win, text="x", height=3, width=6,
+                                    command=lambda: self.changeOperator("x"))
         self.buttonMult.place(x=250, y=100)
 
         #other buttons
         #resolve operation button
-        self.buttonEquals = Button(win, text="=", height=7, width=6)
+        self.buttonEquals = Button(win, text="=", height=7, width=6,
+                                   command=lambda: self.resolveOperation())
         self.buttonEquals.place(x=250, y=160)
 
         #backspace button
-        self.buttonBackspace = Button(win, text="<-", height=3, width=6)
+        self.buttonBackspace = Button(win, text="<-", height=3, width=6,
+                                      command=lambda: self.backspace())
         self.buttonBackspace.place(x=250, y=40)
 
-        #TODO: add functions to correspond to these buttons
-        #TODO: add functionality to change mainLabelFont for each number button press
+    def backspace(self):
+        if not self.operatorUsed:
+            if len(self.numberLabel.cget("text")) == 1:
+                self.numberLabel.config(text="0")
+            else:
+                self.numberLabel.config(text=(self.numberLabel.cget("text")[:-1]))
+    def changeOperator(self, operatorType):
+        self.resolveOperation()
+        self.operatorUsed = True
+        #change operator labels
+        self.currentOperator = operatorType
+        self.operatorLabel.config(text=self.currentOperator)
 
+        self.firstNum = float(self.numberLabel.cget("text"))
+        print("first number set to " + str(self.firstNum) + " with operator " + operatorType)
+
+        #TODO: handle cases with long numbers
+    def resolveOperation(self):
+        self.secondNum = float(self.numberLabel.cget("text"))
+        match self.currentOperator:
+            case "+":
+                self.secondNum = float(self.numberLabel.cget("text"))
+                self.numberLabel.config(text=str(self.firstNum+self.secondNum))
+                self.firstNum = self.firstNum+self.secondNum
+            case "-":
+                self.secondNum = float(self.numberLabel.cget("text"))
+                self.numberLabel.config(text=str(self.firstNum-self.secondNum))
+                self.firstNum = self.firstNum-self.secondNum
+            case "/":
+                self.secondNum = float(self.numberLabel.cget("text"))
+                if self.secondNum == 0:
+                    self.numberLabel.config(text="Error: divide by 0")
+                else:
+                    self.numberLabel.config(text=str(self.firstNum/self.secondNum))
+                    self.firstNum = self.firstNum/self.secondNum
+            case "x":
+                self.secondNum = float(self.numberLabel.cget("text"))
+                self.numberLabel.config(text=str(self.firstNum*self.secondNum))
+                self.firstNum = self.firstNum*self.secondNum
+            case _:
+                print("idk broski")
+
+        self.operatorUsed = False
     def numberButton(self, button_number: str):
         #Updating numberLabel text
-        #Case 1: numberLabel text is shorter than current arbitrary limit
-        if len(self.numberLabel.cget("text")) < 7 and self.numberLabel.cget("text") != "0":
+        #Case 1: numberLabel text is shorter than current arbitrary limit and operator wasnt pressed
+        if      (not self.operatorUsed and
+                (len(self.numberLabel.cget("text")) < 8 and
+                self.numberLabel.cget("text") != "0")):
             self.numberLabel.config(text=(self.numberLabel.cget("text")+button_number))
 
-        #Case 2: numberLabel text is exactly "0"
+        #Case 2: numberLabel text is shorter than current limit and oprerator WAS pressed
+        elif self.operatorUsed:
+            #replace numberLabel with new number
+            self.numberLabel.config(text=(button_number))
+
+        #TODO: check if this case needs operatorPressed logic added in
+        #Case 3: numberLabel text is exactly "0"
         if self.numberLabel.cget("text") == "0":
             if button_number == "0":
-                return 0
+                self.numberLabel.config(text="0")
             else:
                 self.numberLabel.config(text=button_number)
 
+        #Reset the variable as a new number is being entered
+        self.operatorUsed = False
+
 window=Tk()
 mywin = CalcWindow(window)
-window.title("Calculator - 7 digit limit")
+window.title("Calculator - 8 digit limit")
 window.geometry("320x350+10+10")
 window.mainloop()
